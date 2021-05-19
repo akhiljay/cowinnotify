@@ -6,23 +6,21 @@
 // created by https://twitter.com/akhiljp_dev
 
 const url = require("url");
-
 const fetch = require('node-fetch');
+const dotenv = require('dotenv');
+dotenv.config();
 
-export const token = process.env['SLACK_TOKEN'];
+// Load the AWS SDK for Node.js
+var AWS = require('aws-sdk');
+// Set region
+AWS.config.update({region: 'ap-south-1'});
 
-const slackWebhookUrl = token; // Your Slack webhook URL
-//const authorization ="Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiI5ZDg4Njc4YS02ZWI1LTRhZDAtODA0NC02MzhkZWMwZjA1ODQiLCJ1c2VyX2lkIjoiOWQ4ODY3OGEtNmViNS00YWQwLTgwNDQtNjM4ZGVjMGYwNTg0IiwidXNlcl90eXBlIjoiQkVORUZJQ0lBUlkiLCJtb2JpbGVfbnVtYmVyIjo5OTg3OTU2NjY0LCJiZW5lZmljaWFyeV9yZWZlcmVuY2VfaWQiOjM2MjM2NjQ3MjU3ODMwLCJzZWNyZXRfa2V5IjoiYjVjYWIxNjctNzk3Ny00ZGYxLTgwMjctYTYzYWExNDRmMDRlIiwidWEiOiJNb3ppbGxhLzUuMCAoTWFjaW50b3NoOyBJbnRlbCBNYWMgT1MgWCAxMC4xNTsgcnY6NzguMCkgR2Vja28vMjAxMDAxMDEgRmlyZWZveC83OC4wIiwiZGF0ZV9tb2RpZmllZCI6IjIwMjEtMDUtMDhUMTA6MTA6NDUuNDYzWiIsImlhdCI6MTYyMDQ2ODY0NSwiZXhwIjoxNjIwNDY5NTQ1fQ.xJbswoBPymvCdwBSG38TJt-ka477BI4EPqiDN6NipWs";
 
-exports.handler = async (event) => {
-    // TODO implement
-    main();
-    const response = {
-        statusCode: 200,
-        body: JSON.stringify('Running script'),
-    };
-    return response;
-};
+
+const token = process.env['SLACK_TOKEN'];
+console.log(token);
+
+const slackWebhookUrl = 'https://hooks.slack.com/services/'+ token; // Your Slack webhook URL
 
 function sleep(time) {
     return new Promise((resolve) => {
@@ -46,6 +44,7 @@ var dist = {
 // where we are stroing all phone numbers. Can move this to a secure
 // repo once we take this to prod
 function sendToSlack(message) {
+    console.log(slackWebhookUrl);
   return fetch(slackWebhookUrl, {
     body: JSON.stringify({
       text: message,
@@ -99,7 +98,7 @@ function check() {
   // "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=395&date=07-05-2021";
 
   var cowinurl_final =
-    "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/findByDistrict?district_id=395&date=20-05-2021";
+    "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/findByDistrict?district_id=395&date=21-05-2021";
   return (
     fetch(cowinurl_final, {
    headers: {
@@ -119,7 +118,7 @@ function check() {
       .then((res) => res.json())
       //.then((res) => console.log(res))
       .then((json) => {
-        sendToSlack("fetch-made");
+        //sendToSlack("fetch-made");
         const slots = extractcenters(json);
         console.log(slots);
         if (slots.length) {
@@ -141,8 +140,28 @@ function check() {
           return true;
         } else {
           sendToSlack(
-            `No Found slots!**********************************************************************************************************************************************************************************************************************************************************************************************************`
+            `No slots found!**********************************************************************************************************************************************************************************************************************************************************************************************************`
           );
+
+
+  // Create publish parameters
+var params = {
+    Message: 'No slots found', /* required */
+    PhoneNumber: '+919987956664',
+  };
+  
+  // Create promise and SNS service object
+var publishTextPromise = new AWS.SNS({apiVersion: '2010-03-31'}).publish(params).promise();
+
+// Handle promise's fulfilled/rejected states
+publishTextPromise.then(
+  function(data) {
+    console.log("MessageID is " + data.MessageId);
+  }).catch(
+    function(err) {
+    console.error(err, err.stack);
+  });
+    
           return false;
         }
       })
@@ -160,14 +179,15 @@ async function main() {
   while (true) {
     const d = new Date();
     console.log("Checking at", d.toLocaleTimeString());
-    sendToSlack("main function running1")
+    //console.log("Checking at", d.toLocaleTimeString());
+    sendToSlack("Checking at : " + d.toLocaleTimeString());
     await check();
     //if (changed) {
     //   break;
     // }
     // sleep for 5 mins
-  // await sleep(10000);
+  await sleep(100000);
   }
 }
 
-//main();
+main();
