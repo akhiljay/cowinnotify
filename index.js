@@ -12,13 +12,10 @@ dotenv.config();
 
 // Load the AWS SDK for Node.js
 var AWS = require('aws-sdk');
-// Set region
-AWS.config.update({region: 'ap-south-1'});
-
 
 
 const token = process.env['SLACK_TOKEN'];
-console.log(token);
+//console.log(token);
 
 const slackWebhookUrl = 'https://hooks.slack.com/services/'+ token; // Your Slack webhook URL
 
@@ -64,6 +61,28 @@ function uniq(arr) {
   return Array.from(s);
 }
 
+function sendSMS (message1, phone){
+    var params ={
+        Message: message1,
+        PhoneNumber: phone,
+        MessageAttributes: {
+            'AWS.SNS.SMS.SMSType': {
+                DataType: 'String',
+                StringValue: 'Transactional'
+             }
+        }
+    }
+    var publishTextPromise = new AWS.SNS({ apiVersion: '2010-03-31' }).publish(params).promise();
+    publishTextPromise.then(
+        function (data) {
+          console.log(JSON.stringify({ MessageID: data.MessageId }));
+        }).catch(
+            function (err) {
+                console.log(JSON.stringify({ Error: err }));
+            });
+
+}
+
 //function 4: extractcenters - this helps extract details of centers that has
 // available vaccination slots more than 1 or 1
 function extractcenters(respjson) {
@@ -74,8 +93,10 @@ function extractcenters(respjson) {
     return centers;
   }
   centers = respjson.centers.filter((centre) => {
-    return centre.sessions.some((session) => session.available_capacity >= 1);
+    return centre.sessions.some((session) => session.available_capacity_dose1 >= 1 && session.min_age_limit == 18);
+    //return centre.sessions.some((session) => [session.min_age_limit == 18]);
   });
+  
   return centers.map((c) => {
     return {
       name: c.name,
@@ -96,9 +117,16 @@ function check() {
   //const d1 = new Date(); Need to find a way to forumalte date for API
   //var cowinurl_final =
   // "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=395&date=07-05-2021";
-
+   
+  // extract todays date and insert it into the query string
+  const d = new Date();
+  const ye = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(d)
+  const mo = new Intl.DateTimeFormat('en', { month: 'numeric' }).format(d)
+  const da = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(d)
+  format = da + '-' + mo + '-' + ye;
+//console.log(format);
   var cowinurl_final =
-    "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/findByDistrict?district_id=395&date=21-05-2021";
+    "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=395&date="+format;
   return (
     fetch(cowinurl_final, {
    headers: {
@@ -116,7 +144,7 @@ function check() {
     mode: 'cors',
     })
       .then((res) => res.json())
-      //.then((res) => console.log(res))
+      //.then((res) => console.table(res))
       .then((json) => {
         //sendToSlack("fetch-made");
         const slots = extractcenters(json);
@@ -136,12 +164,18 @@ function check() {
             )
             .join("\n");
           console.log("check function is executed");
-          sendToSlack(`@channel Found slots!\n${msg}\n\n`);
+         
+
+            sendToSlack(`@channel Found slots!\n${msg}\n\n`);
+            sendSMS(`Found slots in Mumbai!\n${msg}\n\n`, process.env['YOUR_NUMBER'])
+            sendSMS(`Found slots in Mumbai!\n${msg}\n\n`,process.env['BUDDYS_NUMBER'])
+        
+          //sendToSlack(`@channel Found slots!\n${msg}\n\n`);
           return true;
         } else {
-          sendToSlack(
-            `No slots found!**********************************************************************************************************************************************************************************************************************************************************************************************************`
-          );
+          //sendToSlack(
+          //  `No slots found!**********************************************************************************************************************************************************************************************************************************************************************************************************`
+         // );
 
 
   // Create publish parameters
@@ -173,6 +207,100 @@ function check() {
   );
 }
 
+function checkthane() {
+    //const d1 = new Date(); Need to find a way to forumalte date for API
+    //var cowinurl_final =
+    // "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=395&date=07-05-2021";
+     
+    // extract todays date and insert it into the query string
+    const d = new Date();
+    const ye = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(d)
+    const mo = new Intl.DateTimeFormat('en', { month: 'numeric' }).format(d)
+    const da = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(d)
+    format = da + '-' + mo + '-' + ye;
+  //console.log(format);
+    var cowinurl_final =
+      "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=392&date="+format;
+    return (
+      fetch(cowinurl_final, {
+     headers: {
+        accept: 'application/json, text/plain, */*',
+        'accept-language': 'en-US,en;q=0.5',
+        //authorization,
+        pragma: 'no-cache',
+        'If-None-Match': 'W/"7d73-jOVQU+WJSu+sea+wl1HUjfxuNa0',
+        'Origin': 'https://selfregistration.cowin.gov.in',
+        'User-Agent': 'PostmanRuntime/7.28.0',
+      },
+      referrer: 'https://selfregistration.cowin.gov.in/appointment',
+      body: null,
+      method: 'GET',
+      mode: 'cors',
+      })
+        .then((res) => res.json())
+        //.then((res) => console.table(res))
+        .then((json) => {
+          //sendToSlack("fetch-made");
+          const slots = extractcenters(json);
+          console.log(slots);
+          if (slots.length) {
+            console.log(slots.length);
+            const msg = slots
+              .map(
+                (s) =>
+                  `\nPin Code:[${s.pin}] \n${s.name}\nVaccines: ${
+                    s.vaccines
+                  },\nMin Age Limit: ${JSON.stringify(
+                    s.min_age_limit
+                  )},\nAvailable Capacity: ${
+                    s.available_capacity
+                  },\nDates Available: ${s.dates_available}`
+              )
+              .join("\n");
+            console.log("check function is executed");
+           
+  
+              sendToSlack(`@channel Found slots!\n${msg}\n\n`);
+              sendSMS(`Found slots in Thane!\n${msg}\n\n`, process.env['YOUR_NUMBER'])
+              sendSMS(`Found slots in Thane!\n${msg}\n\n`,process.env['BUDDYS_NUMBER'])
+          
+            //sendToSlack(`@channel Found slots!\n${msg}\n\n`);
+            return true;
+          } else {
+            //sendToSlack(
+            //  `No slots found!**********************************************************************************************************************************************************************************************************************************************************************************************************`
+           // );
+  
+  
+    // Create publish parameters
+  /*var params = {
+      Message: 'No slots found', 
+      PhoneNumber: '+919987956664',
+    };*/
+    
+    // Create promise and SNS service object
+  //var publishTextPromise = new AWS.SNS({apiVersion: '2010-03-31'}).publish(params).promise();
+  
+  // Handle promise's fulfilled/rejected states
+  /*publishTextPromise.then(
+    function(data) {
+      console.log("MessageID is " + data.MessageId);
+    }).catch(
+      function(err) {
+      console.error(err, err.stack);
+    });*/
+      
+            return false;
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+          sendToSlack("@channel Script errored! 403 error possible", error);
+          return true;
+        })
+    );
+  }
+
 // function 7: main - this is just a heartbeat function that
 //checks the status of slots every 5 mins
 async function main() {
@@ -180,8 +308,10 @@ async function main() {
     const d = new Date();
     console.log("Checking at", d.toLocaleTimeString());
     //console.log("Checking at", d.toLocaleTimeString());
-    sendToSlack("Checking at : " + d.toLocaleTimeString());
+    //sendToSlack("Checking at : " + d.toLocaleTimeString());
     await check();
+    await sleep(3000);
+    await checkthane();
     //if (changed) {
     //   break;
     // }
