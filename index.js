@@ -168,7 +168,7 @@ function check() {
           console.log("check function is executed");
          
 
-            sendToSlack(`@channel Found slots!\n${msg}\n\n`);
+            sendToSlack(`@channel Found slots in Mumbai!\n${msg}\n\n`);
             sendSMS(`Found slots in Mumbai!\n${msg}\n\n`, process.env['YOUR_NUMBER'])
             sendSMS(`Found slots in Mumbai!\n${msg}\n\n`,process.env['BUDDYS_NUMBER'])
         
@@ -179,24 +179,6 @@ function check() {
           //  `No slots found!**********************************************************************************************************************************************************************************************************************************************************************************************************`
          // );
 
-
-  // Create publish parameters
-/*var params = {
-    Message: 'No slots found', 
-    PhoneNumber: '+919987956664',
-  };*/
-  
-  // Create promise and SNS service object
-//var publishTextPromise = new AWS.SNS({apiVersion: '2010-03-31'}).publish(params).promise();
-
-// Handle promise's fulfilled/rejected states
-/*publishTextPromise.then(
-  function(data) {
-    console.log("MessageID is " + data.MessageId);
-  }).catch(
-    function(err) {
-    console.error(err, err.stack);
-  });*/
     
           return false;
         }
@@ -262,7 +244,7 @@ function checkthane() {
             console.log("check function is executed");
            
   
-              sendToSlack(`@channel Found slots!\n${msg}\n\n`);
+              sendToSlack(`@channel Found slots in Thane!\n${msg}\n\n`);
               sendSMS(`Found slots in Thane!\n${msg}\n\n`, process.env['YOUR_NUMBER'])
               sendSMS(`Found slots in Thane!\n${msg}\n\n`,process.env['BUDDYS_NUMBER'])
               
