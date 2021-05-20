@@ -145,22 +145,22 @@ function check() {
 
 
   // Create publish parameters
-var params = {
-    Message: 'No slots found', /* required */
+/*var params = {
+    Message: 'No slots found', 
     PhoneNumber: '+919987956664',
-  };
+  };*/
   
   // Create promise and SNS service object
-var publishTextPromise = new AWS.SNS({apiVersion: '2010-03-31'}).publish(params).promise();
+//var publishTextPromise = new AWS.SNS({apiVersion: '2010-03-31'}).publish(params).promise();
 
 // Handle promise's fulfilled/rejected states
-publishTextPromise.then(
+/*publishTextPromise.then(
   function(data) {
     console.log("MessageID is " + data.MessageId);
   }).catch(
     function(err) {
     console.error(err, err.stack);
-  });
+  });*/
     
           return false;
         }
@@ -186,7 +186,7 @@ async function main() {
     //   break;
     // }
     // sleep for 5 mins
-  await sleep(100000);
+  await sleep(10000);
   }
 }
 
