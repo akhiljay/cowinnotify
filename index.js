@@ -83,6 +83,8 @@ function sendSMS (message1, phone){
 
 }
 
+
+
 //function 4: extractcenters - this helps extract details of centers that has
 // available vaccination slots more than 1 or 1
 function extractcenters(respjson) {
@@ -105,7 +107,7 @@ function extractcenters(respjson) {
         uniq(c.sessions.map((s) => s.vaccine).filter(Boolean)).join(" ") ||
         "Not specified",
       min_age_limit: uniq(c.sessions.map((s) => s.min_age_limit)),
-      available_capacity: uniq(c.sessions.map((s) => s.available_capacity)),
+      available_capacity_dose1: uniq(c.sessions.map((s) => s.available_capacity_dose1)),
       dates_available: uniq(c.sessions.map((s) => s.date))
     };
   });
@@ -158,8 +160,8 @@ function check() {
                   s.vaccines
                 },\nMin Age Limit: ${JSON.stringify(
                   s.min_age_limit
-                )},\nAvailable Capacity: ${
-                  s.available_capacity
+                )},\nAvailable Capacity Dose 1: ${
+                  s.available_capacity_dose1
                 },\nDates Available: ${s.dates_available}`
             )
             .join("\n");
@@ -253,7 +255,7 @@ function checkthane() {
                   },\nMin Age Limit: ${JSON.stringify(
                     s.min_age_limit
                   )},\nAvailable Capacity: ${
-                    s.available_capacity
+                    s.available_capacity_dose1
                   },\nDates Available: ${s.dates_available}`
               )
               .join("\n");
@@ -263,6 +265,7 @@ function checkthane() {
               sendToSlack(`@channel Found slots!\n${msg}\n\n`);
               sendSMS(`Found slots in Thane!\n${msg}\n\n`, process.env['YOUR_NUMBER'])
               sendSMS(`Found slots in Thane!\n${msg}\n\n`,process.env['BUDDYS_NUMBER'])
+              
           
             //sendToSlack(`@channel Found slots!\n${msg}\n\n`);
             return true;
@@ -270,25 +273,6 @@ function checkthane() {
             //sendToSlack(
             //  `No slots found!**********************************************************************************************************************************************************************************************************************************************************************************************************`
            // );
-  
-  
-    // Create publish parameters
-  /*var params = {
-      Message: 'No slots found', 
-      PhoneNumber: '+919987956664',
-    };*/
-    
-    // Create promise and SNS service object
-  //var publishTextPromise = new AWS.SNS({apiVersion: '2010-03-31'}).publish(params).promise();
-  
-  // Handle promise's fulfilled/rejected states
-  /*publishTextPromise.then(
-    function(data) {
-      console.log("MessageID is " + data.MessageId);
-    }).catch(
-      function(err) {
-      console.error(err, err.stack);
-    });*/
       
             return false;
           }
@@ -309,13 +293,14 @@ async function main() {
     console.log("Checking at", d.toLocaleTimeString());
     //console.log("Checking at", d.toLocaleTimeString());
     //sendToSlack("Checking at : " + d.toLocaleTimeString());
-    await check();
-    await sleep(3000);
-    await checkthane();
-    //if (changed) {
-    //   break;
-    // }
-    // sleep for 5 mins
+    const changed = await check();
+    if (changed) {
+      await sleep (120000);
+    }
+    const changedthane = await checkthane();
+    if (changedthane) {
+      await sleep (120000);
+    }
   await sleep(10000);
   }
 }
