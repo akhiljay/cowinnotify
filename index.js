@@ -8,7 +8,19 @@
 const url = require("url");
 const fetch = require('node-fetch');
 const dotenv = require('dotenv');
+const express = require('express');
+const bodyParser = require('body-parser');
+const app = express();
+// Tell express to use the body-parser middleware and to not parse extended bodies
+//app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.text());
 dotenv.config();
+app.use(
+  express.urlencoded({
+    extended: true
+  })
+)
+app.use(express.json())
 
 // Load the AWS SDK for Node.js
 var AWS = require('aws-sdk');
@@ -383,3 +395,20 @@ async function main() {
 }
 
 main();
+
+
+// Route that receives a POST request to /sms
+app.post('/sms', function (req, res) {
+  const body = req.body
+  console.log(body);
+  res.set('Content-Type', 'text/plain')
+  res.send(`You sent: ${body} to Express`)
+})
+
+// Tell our app to listen on port 3000
+app.listen(8080, function (err) {
+  if (err) {
+    throw err
+  }
+  console.log('Server started on port 8080')
+})
