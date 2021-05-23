@@ -15,9 +15,11 @@ var AWS = require('aws-sdk');
 
 
 const token = process.env['SLACK_TOKEN'];
+const token1 = process.env['SLACK_TOKEN1'];
 //console.log(token);
 
 const slackWebhookUrl = 'https://hooks.slack.com/services/'+ token; // Your Slack webhook URL
+const slackWebhookUrlkol = 'https://hooks.slack.com/services/'+ token1; // Your Slack webhook URL
 
 function sleep(time) {
     return new Promise((resolve) => {
@@ -51,6 +53,19 @@ function sendToSlack(message) {
     },
     method: 'POST',
   });
+}
+
+function sendToSlackkol(message1) {
+  console.log(slackWebhookUrlkol);
+return fetch(slackWebhookUrlkol, {
+  body: JSON.stringify({
+    text: message1,
+  }),
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  method: 'POST',
+});
 }
 
 
@@ -267,6 +282,82 @@ function checkthane() {
     );
   }
 
+  function checkkolkata() {
+    //const d1 = new Date(); Need to find a way to forumalte date for API
+    //var cowinurl_final =
+    // "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=395&date=07-05-2021";
+     
+    // extract todays date and insert it into the query string
+    const d = new Date();
+    const ye = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(d)
+    const mo = new Intl.DateTimeFormat('en', { month: 'numeric' }).format(d)
+    const da = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(d)
+    format = da + '-' + mo + '-' + ye;
+  //console.log(format);
+    var cowinurl_final =
+      "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=725&date="+format;
+    return (
+      fetch(cowinurl_final, {
+     headers: {
+        accept: 'application/json, text/plain, */*',
+        'accept-language': 'en-US,en;q=0.5',
+        //authorization,
+        pragma: 'no-cache',
+        'If-None-Match': 'W/"7d73-jOVQU+WJSu+sea+wl1HUjfxuNa0',
+        'Origin': 'https://selfregistration.cowin.gov.in',
+        'User-Agent': 'PostmanRuntime/7.28.0',
+      },
+      referrer: 'https://selfregistration.cowin.gov.in/appointment',
+      body: null,
+      method: 'GET',
+      mode: 'cors',
+      })
+        .then((res) => res.json())
+        //.then((res) => console.table(res))
+        .then((json) => {
+          //sendToSlack("fetch-made");
+          const slots = extractcenters(json);
+          console.log(slots);
+          if (slots.length) {
+            console.log(slots.length);
+            const msg = slots
+              .map(
+                (s) =>
+                  `\nPin Code:[${s.pin}] \n${s.name}\nVaccines: ${
+                    s.vaccines
+                  },\nMin Age Limit: ${JSON.stringify(
+                    s.min_age_limit
+                  )},\nAvailable Capacity: ${
+                    s.available_capacity_dose1
+                  },\nDates Available: ${s.dates_available}`
+              )
+              .join("\n");
+            console.log("check function is executed");
+           
+  
+              sendToSlackkol(`@channel Found slots in Kolkata!\n${msg}\n\n`);
+              //sendSMS(`Found slots in Thane!\n${msg}\n\n`, process.env['YOUR_NUMBER'])
+              sendSMS(`Found slots in Kolkata!\n${msg}\n\n`,process.env['BUDDYS1_NUMBER'])
+              
+          
+            //sendToSlack(`@channel Found slots!\n${msg}\n\n`);
+            return true;
+          } else {
+            //sendToSlackkol(
+            //  `No slots found!**********************************************************************************************************************************************************************************************************************************************************************************************************`
+            //);
+      
+            return false;
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+          sendToSlack("@channel Script errored! 403 error possible", error);
+          return true;
+        })
+    );
+  }
+
 // function 7: main - this is just a heartbeat function that
 //checks the status of slots every 5 mins
 async function main() {
@@ -281,6 +372,10 @@ async function main() {
     }
     const changedthane = await checkthane();
     if (changedthane) {
+      await sleep (120000);
+    }
+    const changedkol = await checkkolkata();
+    if (changedkol) {
       await sleep (120000);
     }
   await sleep(10000);
