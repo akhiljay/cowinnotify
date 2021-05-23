@@ -406,9 +406,9 @@ app.post('/sms', function (req, res) {
 })
 
 // Tell our app to listen on port 3000
-app.listen(80, function (err) {
+app.listen(3000, function (err) {
   if (err) {
     throw err
   }
-  console.log('Server started on port 80')
+  console.log('Server started on port 3000')
 })
