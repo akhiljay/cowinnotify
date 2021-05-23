@@ -352,7 +352,7 @@ function checkthane() {
         })
         .catch((error) => {
           console.error(error);
-          sendToSlack("@channel Script errored! 403 error possible", error);
+          sendToSlackkol("@channel Script errored! 403 error possible", error);
           return true;
         })
     );
