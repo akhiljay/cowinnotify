@@ -501,11 +501,11 @@ async function main() {
     if (changedthane) {
       await sleep (120000);
     }*/
-    console.log("Checking Kolkata at ", d.toLocaleTimeString());
-    const changedkol = await checkkolkata();
+    //console.log("Checking Kolkata at ", d.toLocaleTimeString());
+   /* const changedkol = await checkkolkata();
     if (changedkol) {
       await sleep (120000);
-    }
+    }*/
   await sleep(10000);
   }
 }
