@@ -420,7 +420,7 @@ function checkthane() {
     format = da + '-' + mo + '-' + ye;
   //console.log(format);
     var cowinurl_final =
-      "https://cdn-api.co-vin.in/api/v2/appointment/sessions/calendarByDistrict?district_id=725&date="+format;
+      "https://cdn-api.co-vin.in/api/v2/appointment/sessions/calendarByDistrict?district_id=395&date="+format;
     return (
       fetch(cowinurl_final, {
      headers: {
@@ -496,14 +496,15 @@ async function main() {
       console.log("this is the changed walla" + changed);
       await sleep (120000);
     }
+    await sleep (50000);
  /*   const changedthane = await checkthane();
     if (changedthane) {
       await sleep (120000);
     }*/
-    const changedkol = await checkkolkata();
+    /*const changedkol = await checkkolkata();
     if (changedkol) {
       await sleep (120000);
-    }
+    }*/
   await sleep(10000);
   }
 }
