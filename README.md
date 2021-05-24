@@ -1,8 +1,11 @@
-# COWIN SMS Notification system
+# COWIN SMS Real Time Notification system
 A SMS bot that sends you a notification when a slot is available in your city real time. It's completely build on top of AWS. AWS Lightsail is used for running the node server, AWS SNS is used to send an SMS text when a slot for the first dose is available for 18-45 range in Mumbai and Thane. In order to get real time slot availability I rely on generating an OTP/token using a burner mobile number. You can augment the code to ping for a different city and enter your phone number to send the SMS alert. 
 
 ## Problem Statement
-There are multiple Cowin notification bots on telegram, but I recently discovered that telegram schedules the messages it needs to send out to users. Because of this you actually end up getting the alert pretty late (>10mins). The Mumbai telegram bot has about 79K+ users subscribed to it and missing the alert by a single minute is wasteful. 
+There are two problems with COWIN website and notification bots today. 
+
+a) There are multiple Cowin notification bots on telegram, and I recently discovered that telegram schedules the messages it needs to send out to users. Because of this you end up getting the alert pretty late (>10mins). The Mumbai telegram bot has about 79K+ users subscribed to it and missing the alert by a single minute decreases your chances of getting a slot.
+b) The APIs that you hit are public APIs and are cached for 30mins. Even after setting up a private notification server with these public end points, the closest I could get to booking a slot was seeing there were 50 slots in one hospital and by the time I enter the captcha they are gone. After looking at what happened here, I observed that the public APIs are a lot behind when it comes to letting me know of available slots (there were 0 slots remaining when the public API showed that there were 50). 
 
 I hope not everyone needs to setup this bot and the Indian government soon figures a way out to patch the vaccine supply in our country. 
 
