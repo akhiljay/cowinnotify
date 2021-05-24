@@ -11,6 +11,7 @@ const dotenv = require('dotenv');
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
+
 // Tell express to use the body-parser middleware and to not parse extended bodies
 //app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.text());
@@ -24,6 +25,10 @@ app.use(express.json())
 
 // Load the AWS SDK for Node.js
 var AWS = require('aws-sdk');
+
+// setting up telegram bot notifier. 
+const { sendMessageFor } = require('simple-telegram-message')
+const sendMessage = sendMessageFor(process.env.BOT_TOKEN, process.env.BOT_CHANNEL_ID)
 
 
 const token = process.env['SLACK_TOKEN'];
@@ -304,13 +309,16 @@ function check() {
           console.log("check function is executed");
          
 
-            sendToSlack(`@channel Found slots in Mumbai!\n${msg}\n\n`);
-            sendSMS(`Found slots in Mumbai!\n${msg}\n\n`, process.env['YOUR_NUMBER'])
-            sendSMS(`Found slots in Mumbai!\n${msg}\n\n`,process.env['BUDDYS_NUMBER'])
+            sendToSlack(`Found slots in Mumbai!\n${msg}\n\n`);
+            sendMessage(`Found slots in Mumbai!\n${msg}\n\n`)
+            //sendSMS(`Found slots in Mumbai!\n${msg}\n\n`, process.env['YOUR_NUMBER'])
+            //sendSMS(`Found slots in Mumbai!\n${msg}\n\n`,process.env['BUDDYS_NUMBER'])
+         
         
           //sendToSlack(`@channel Found slots!\n${msg}\n\n`);
           return true;
         } else {
+         // sendMessage(`No slots found`)
           //sendToSlack(
           //  `No slots found!**********************************************************************************************************************************************************************************************************************************************************************************************************`
          // );
@@ -322,6 +330,7 @@ function check() {
       .catch((error) => {
         console.error(error);
         sendToSlack("@channel Script errored! 403 error possible. Rotating Bearer Token", error);
+        //sendMessage(`@channel Script errored! 403 error possible. Rotating Bearer Token", ${error}`)
         transactionID = generateOtp();
         console.log("here is the txnID" + transactionID);
         return true;
