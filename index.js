@@ -246,9 +246,6 @@ function generateOtp(){
   );
 }
 
-function tillIrecieveOTP(){
-
-}
 
 //function 6: check(district) - this function checks the districts users are interested
 // and sends them an available slot
@@ -494,7 +491,7 @@ async function main() {
     //console.log(changed);
     if (changed) {
       console.log("this is the changed walla" + changed);
-      await sleep (120000);
+      await sleep (30000);
     }
     //await sleep (10000);
  /*   const changedthane = await checkthane();
