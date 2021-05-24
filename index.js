@@ -496,10 +496,10 @@ async function main() {
       console.log("this is the changed walla" + changed);
       await sleep (120000);
     }
-    const changedthane = await checkthane();
+ /*   const changedthane = await checkthane();
     if (changedthane) {
       await sleep (120000);
-    }
+    }*/
     const changedkol = await checkkolkata();
     if (changedkol) {
       await sleep (120000);
