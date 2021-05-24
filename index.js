@@ -28,6 +28,19 @@ var AWS = require('aws-sdk');
 
 const token = process.env['SLACK_TOKEN'];
 const token1 = process.env['SLACK_TOKEN1'];
+const cowin_otp_secret = process.env['COWIN_OTP_SECRET'];
+const yourcowinnumber = process.env['YOUR_COWIN_NUMBER'];
+const otpmsg = {
+  secret: cowin_otp_secret,
+  mobile: yourcowinnumber
+}
+console.log(otpmsg)
+
+//keeping this as a global 
+let transactionID = "";
+let bearertoken ="";
+let body = "";
+
 //console.log(token);
 
 const slackWebhookUrl = 'https://hooks.slack.com/services/'+ token; // Your Slack webhook URL
@@ -88,6 +101,7 @@ function uniq(arr) {
   return Array.from(s);
 }
 
+//send SMS via AWS SNS system
 function sendSMS (message1, phone){
     var params ={
         Message: message1,
@@ -110,7 +124,61 @@ function sendSMS (message1, phone){
 
 }
 
+//extractOTP and get bearer token for API requests
+function   extractandvalidateotp(sms, transactionID){
+  OTP = sms.match(/(^|[^\d])(\d{6})([^\d]|$)/);
+  if (OTP !== null){
+    console.log(OTP[2]);
+    const hashed = require('crypto').createHash('sha256').update(OTP[2]).digest('hex');
+    console.log("this is the hashed otp "+ hashed)
+    //now send the confirmOTP API
+    let msg = {
+      otp: hashed,
+      txnId: transactionID
+    }
+    console.log(JSON.stringify(msg));
+    var confirmOTPlink ="https://cdn-api.co-vin.in/api/v2/auth/validateMobileOtp";
+    return (
+      fetch(confirmOTPlink, {
+     headers: {
+        accept: 'application/json, text/plain, */*',
+        'accept-language': 'en-US,en;q=0.5',
+        //authorization,
+        pragma: 'no-cache',
+        'Origin': 'https://selfregistration.cowin.gov.in',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0',
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(JSON.stringify(msg)),
+      },
+      referrer: 'https://selfregistration.cowin.gov.in/appointment',
+      method: 'POST',
+      body: `{"otp":"${hashed}","txnId":"${transactionID}"}`,
+      })
+        .then((res) => res.json())
+        //.then((res) => console.table(res))
+        .then((json) => {
+          //sendToSlack("fetch-made");
+          //const txid = extractcenters(json);
+          //console.log(json.token);
+          console.log("This is the bearertoken request response"+JSON.stringify(json))
+          bearertoken = json.token;
+          console.log("This is inside the validationOTP func="+bearertoken)
+          return json.token;
+          
+        })
+        .catch((error) => {
+          console.error(error);
+          sendToSlack("Couldn't confirm OTP, we no longer have a token to make requests", error);
+          //rotateBearerToken();
+          return false;
+        })
+    );
 
+  }
+  else {
+    return false;
+  }
+}
 
 //function 4: extractcenters - this helps extract details of centers that has
 // available vaccination slots more than 1 or 1
@@ -140,6 +208,48 @@ function extractcenters(respjson) {
   });
 }
 
+function generateOtp(){
+  var generateOTPlink ="https://cdn-api.co-vin.in/api/v2/auth/generateMobileOTP";
+  console.log("This is the JSON blob that wil be sent up "+JSON.stringify(otpmsg));
+  return (
+    fetch(generateOTPlink, {
+   headers: {
+      accept: '*/*',
+      'accept-language': 'en-US',
+      'accept-encoding': 'gzip',
+      pragma: 'no-cache',
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0',
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(JSON.stringify(otpmsg)),
+    },
+    referrer: 'https://selfregistration.cowin.gov.in/',
+    method: 'POST',
+    body: `{"secret":"${cowin_otp_secret}","mobile":${yourcowinnumber}}`,
+    })
+      .then((res) => res.json())
+      //.then((res) => console.table(res))
+      .then((json) => {
+        //sendToSlack("fetch-made");
+        //const txid = extractcenters(json);
+        console.log("This is the transaction id from generateOTP func"+
+         JSON.stringify(json));
+         transactionID = json.txnId;
+         console.log("here is just the transaction id " + json.txnId);
+        return json.txnId;
+      })
+      .catch((error) => {
+        console.error(error);
+        sendToSlack("Couldn't create new OTP, website secret may have changed. Update .env with new secret", error);
+        //rotateBearerToken();
+        return false;
+      })
+  );
+}
+
+function tillIrecieveOTP(){
+
+}
+
 //function 6: check(district) - this function checks the districts users are interested
 // and sends them an available slot
 function check() {
@@ -155,13 +265,13 @@ function check() {
   format = da + '-' + mo + '-' + ye;
 //console.log(format);
   var cowinurl_final =
-    "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=395&date="+format;
+    "https://cdn-api.co-vin.in/api/v2/appointment/sessions/calendarByDistrict?district_id=395&date="+format;
   return (
     fetch(cowinurl_final, {
    headers: {
       accept: 'application/json, text/plain, */*',
       'accept-language': 'en-US,en;q=0.5',
-      //authorization,
+      authorization: "Bearer " + bearertoken,
       pragma: 'no-cache',
       'If-None-Match': 'W/"7d73-jOVQU+WJSu+sea+wl1HUjfxuNa0',
       'Origin': 'https://selfregistration.cowin.gov.in',
@@ -212,8 +322,11 @@ function check() {
       })
       .catch((error) => {
         console.error(error);
-        sendToSlack("@channel Script errored! 403 error possible", error);
+        sendToSlack("@channel Script errored! 403 error possible. Rotating Bearer Token", error);
+        transactionID = generateOtp();
+        console.log("here is the txnID" + transactionID);
         return true;
+
       })
   );
 }
@@ -231,7 +344,7 @@ function checkthane() {
     format = da + '-' + mo + '-' + ye;
   //console.log(format);
     var cowinurl_final =
-      "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=392&date="+format;
+      "https://cdn-api.co-vin.in/api/v2/appointment/sessions/calendarByDistrict?district_id=392&date="+format;
     return (
       fetch(cowinurl_final, {
      headers: {
@@ -307,7 +420,7 @@ function checkthane() {
     format = da + '-' + mo + '-' + ye;
   //console.log(format);
     var cowinurl_final =
-      "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=725&date="+format;
+      "https://cdn-api.co-vin.in/api/v2/appointment/sessions/calendarByDistrict?district_id=725&date="+format;
     return (
       fetch(cowinurl_final, {
      headers: {
@@ -376,10 +489,11 @@ async function main() {
   while (true) {
     const d = new Date();
     console.log("Checking at", d.toLocaleTimeString());
-    //console.log("Checking at", d.toLocaleTimeString());
-    //sendToSlack("Checking at : " + d.toLocaleTimeString());
+
     const changed = await check();
+    //console.log(changed);
     if (changed) {
+      console.log("this is the changed walla" + changed);
       await sleep (120000);
     }
     const changedthane = await checkthane();
@@ -394,13 +508,13 @@ async function main() {
   }
 }
 
-main();
-
-
 // Route that receives a POST request to /sms
 app.post('/sms', function (req, res) {
-  const body = req.body
+  body = req.body
   console.log(body);
+  //getting this SMS to create a new bearertoken;
+  beartoken = extractandvalidateotp(body, transactionID);
+  console.log("This is happening inside the /sms loop="+beartoken);
   res.set('Content-Type', 'text/plain')
   res.send(`You sent: ${body} to Express`)
 })
@@ -411,4 +525,7 @@ app.listen(3000, function (err) {
     throw err
   }
   console.log('Server started on port 3000')
+
 })
+
+main();
