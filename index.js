@@ -502,7 +502,7 @@ async function main() {
     //console.log(changed);
     if (changed) {
       console.log("this is the changed walla" + changed);
-      await sleep (10000);
+      await sleep (5000);
     }
     //await sleep (10000);
  /*   const changedthane = await checkthane();
@@ -514,7 +514,7 @@ async function main() {
     if (changedkol) {
       await sleep (120000);
     }*/
-  await sleep(10000);
+  await sleep(5000);
   }
 }
 
