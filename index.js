@@ -30,6 +30,8 @@ const token = process.env['SLACK_TOKEN'];
 const token1 = process.env['SLACK_TOKEN1'];
 const cowin_otp_secret = process.env['COWIN_OTP_SECRET'];
 const yourcowinnumber = process.env['YOUR_COWIN_NUMBER'];
+
+
 const otpmsg = {
   secret: cowin_otp_secret,
   mobile: yourcowinnumber
@@ -491,7 +493,7 @@ async function main() {
     //console.log(changed);
     if (changed) {
       console.log("this is the changed walla" + changed);
-      await sleep (30000);
+      await sleep (10000);
     }
     //await sleep (10000);
  /*   const changedthane = await checkthane();
