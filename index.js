@@ -488,7 +488,7 @@ function checkthane() {
 async function main() {
   while (true) {
     const d = new Date();
-    console.log("Checking at", d.toLocaleTimeString());
+    console.log("Checking Mumbai at ", d.toLocaleTimeString());
 
     const changed = await check();
     //console.log(changed);
@@ -496,11 +496,12 @@ async function main() {
       console.log("this is the changed walla" + changed);
       await sleep (120000);
     }
-    await sleep (5000);
+    await sleep (10000);
  /*   const changedthane = await checkthane();
     if (changedthane) {
       await sleep (120000);
     }*/
+    console.log("Checking Kolkata at ", d.toLocaleTimeString());
     const changedkol = await checkkolkata();
     if (changedkol) {
       await sleep (120000);
