@@ -420,7 +420,7 @@ function checkthane() {
     format = da + '-' + mo + '-' + ye;
   //console.log(format);
     var cowinurl_final =
-      "https://cdn-api.co-vin.in/api/v2/appointment/sessions/calendarByDistrict?district_id=395&date="+format;
+      "https://cdn-api.co-vin.in/api/v2/appointment/sessions/calendarByDistrict?district_id=725&date="+format;
     return (
       fetch(cowinurl_final, {
      headers: {
